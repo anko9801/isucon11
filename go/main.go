@@ -491,7 +491,7 @@ func getIsuList(c echo.Context) error {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	err = tx.Select(&lastConditions, query, args)
+	err = tx.Select(&lastConditions, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			foundLastCondition = false
