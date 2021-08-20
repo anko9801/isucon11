@@ -478,10 +478,8 @@ func getIsuList(c echo.Context) error {
 
 	responseList := []GetIsuListResponse{}
 	isuUUIDList := make([]string, 0, 1000)
-	isuUUID := make(map[string]Isu)
 	for i, _ := range isuList {
 		isuUUIDList = append(isuUUIDList, isuList[i].JIAIsuUUID)
-		isuUUID[isuList[i].JIAIsuUUID] = isuList[i]
 	}
 	// N+1
 	var lastConditions []IsuCondition
@@ -501,7 +499,12 @@ func getIsuList(c echo.Context) error {
 		}
 	}
 
-	for i, _ := range lastConditions {
+	lastConditionsMap := make(map[string]IsuCondition)
+	for i := range lastConditions {
+		lastConditionsMap[lastConditions[i].JIAIsuUUID] = lastConditions[i]
+	}
+
+	for i, _ := range isuList {
 		var formattedCondition *GetIsuConditionResponse
 		if foundLastCondition {
 			conditionLevel, err := calculateConditionLevel(lastConditions[i].Condition)
@@ -511,21 +514,21 @@ func getIsuList(c echo.Context) error {
 			}
 
 			formattedCondition = &GetIsuConditionResponse{
-				JIAIsuUUID:     lastConditions[i].JIAIsuUUID,
-				IsuName:        isuUUID[lastConditions[i].JIAIsuUUID].Name,
-				Timestamp:      lastConditions[i].Timestamp.Unix(),
-				IsSitting:      lastConditions[i].IsSitting,
-				Condition:      lastConditions[i].Condition,
+				JIAIsuUUID:     lastConditionsMap[isuList[i].JIAIsuUUID].JIAIsuUUID,
+				IsuName:        isuList[i].Name,
+				Timestamp:      lastConditionsMap[isuList[i].JIAIsuUUID].Timestamp.Unix(),
+				IsSitting:      lastConditionsMap[isuList[i].JIAIsuUUID].IsSitting,
+				Condition:      lastConditionsMap[isuList[i].JIAIsuUUID].Condition,
 				ConditionLevel: conditionLevel,
-				Message:        lastConditions[i].Message,
+				Message:        lastConditionsMap[isuList[i].JIAIsuUUID].Message,
 			}
 		}
 
 		res := GetIsuListResponse{
-			ID:                 isuUUID[lastConditions[i].JIAIsuUUID].ID,
-			JIAIsuUUID:         isuUUID[lastConditions[i].JIAIsuUUID].JIAIsuUUID,
-			Name:               isuUUID[lastConditions[i].JIAIsuUUID].Name,
-			Character:          isuUUID[lastConditions[i].JIAIsuUUID].Character,
+			ID:                 isuList[i].ID,
+			JIAIsuUUID:         isuList[i].JIAIsuUUID,
+			Name:               isuList[i].Name,
+			Character:          isuList[i].Character,
 			LatestIsuCondition: formattedCondition}
 		responseList = append(responseList, res)
 	}
