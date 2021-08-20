@@ -482,7 +482,7 @@ func getIsuList(c echo.Context) error {
 	}
 	// N+1
 	var lastConditions []IsuCondition
-	query, args, err := sqlx.In("SELECT * FROM `isu_newest_condition` WHERE `jia_isu_uuid` IN (?)", isuUUIDList)
+	query, args, err := sqlx.In("SELECT * FROM `isu_condition` WHERE `timestamp` IN (SELECT MAX(`timestamp`) FROM `isu_condition` GROUP BY `jia_isu_uuid`)", isuUUIDList)
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -1266,12 +1266,6 @@ func postIsuCondition(c echo.Context) error {
 	}
 
 	_, err = tx.NamedExec("INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jiaisuuuid, :timestamp, :issitting, :condition, :message)", namedExecData)
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	_, err = tx.NamedExec("INSERT INTO `isu_newest_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jiaisuuuid, :timestamp, :issitting, :condition, :message)", namedExecData)
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
