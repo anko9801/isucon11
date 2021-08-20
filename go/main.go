@@ -476,14 +476,12 @@ func getIsuList(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	responseList := []GetIsuListResponse{}
-	isuUUIDList := make([]string, 0, 1000)
+	isuUUIDList := make([]string, 0)
 	for i, _ := range isuList {
 		isuUUIDList = append(isuUUIDList, isuList[i].JIAIsuUUID)
 	}
 	// N+1
 	var lastConditions []IsuCondition
-	foundLastCondition := true
 	query, args, err := sqlx.In("SELECT * FROM `isu_newest_condition` WHERE `jia_isu_uuid` IN (?)", isuUUIDList)
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
@@ -492,11 +490,15 @@ func getIsuList(c echo.Context) error {
 	err = tx.Select(&lastConditions, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			foundLastCondition = false
 		} else {
 			c.Logger().Errorf("db error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	lastConditionsMap := make(map[string]IsuCondition)
@@ -504,39 +506,34 @@ func getIsuList(c echo.Context) error {
 		lastConditionsMap[lastConditions[i].JIAIsuUUID] = lastConditions[i]
 	}
 
-	for i, _ := range isuList {
+	responseList := []GetIsuListResponse{}
+	for _, isu := range isuList {
 		var formattedCondition *GetIsuConditionResponse
-		if _, ok := lastConditionsMap[isuList[i].JIAIsuUUID]; ok && foundLastCondition {
-			conditionLevel, err := calculateConditionLevel(lastConditionsMap[isuList[i].JIAIsuUUID].Condition)
+		if lastCondition, ok := lastConditionsMap[isu.JIAIsuUUID]; ok {
+			conditionLevel, err := calculateConditionLevel(lastCondition.Condition)
 			if err != nil {
 				c.Logger().Error(err)
 				return c.NoContent(http.StatusInternalServerError)
 			}
 
 			formattedCondition = &GetIsuConditionResponse{
-				JIAIsuUUID:     lastConditionsMap[isuList[i].JIAIsuUUID].JIAIsuUUID,
-				IsuName:        isuList[i].Name,
-				Timestamp:      lastConditionsMap[isuList[i].JIAIsuUUID].Timestamp.Unix(),
-				IsSitting:      lastConditionsMap[isuList[i].JIAIsuUUID].IsSitting,
-				Condition:      lastConditionsMap[isuList[i].JIAIsuUUID].Condition,
+				JIAIsuUUID:     lastCondition.JIAIsuUUID,
+				IsuName:        isu.Name,
+				Timestamp:      lastCondition.Timestamp.Unix(),
+				IsSitting:      lastCondition.IsSitting,
+				Condition:      lastCondition.Condition,
 				ConditionLevel: conditionLevel,
-				Message:        lastConditionsMap[isuList[i].JIAIsuUUID].Message,
+				Message:        lastCondition.Message,
 			}
 		}
 
 		res := GetIsuListResponse{
-			ID:                 isuList[i].ID,
-			JIAIsuUUID:         isuList[i].JIAIsuUUID,
-			Name:               isuList[i].Name,
-			Character:          isuList[i].Character,
+			ID:                 isu.ID,
+			JIAIsuUUID:         isu.JIAIsuUUID,
+			Name:               isu.Name,
+			Character:          isu.Character,
 			LatestIsuCondition: formattedCondition}
 		responseList = append(responseList, res)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	return c.JSON(http.StatusOK, responseList)
