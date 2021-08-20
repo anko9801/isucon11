@@ -477,14 +477,20 @@ func getIsuList(c echo.Context) error {
 	}
 
 	responseList := []GetIsuListResponse{}
-	var isuUUIDList []string
+	isuUUIDList := make([]string, 0, 1000)
+	isuUUID := make(map[string]Isu)
 	for i, _ := range isuList {
 		isuUUIDList = append(isuUUIDList, isuList[i].JIAIsuUUID)
+		isuUUID[isuList[i].JIAIsuUUID] = isuList[i]
 	}
 	// N+1
 	var lastConditions []IsuCondition
 	foundLastCondition := true
 	query, args, err := sqlx.In("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` IN (?) ORDER BY `timestamp` DESC LIMIT 1", isuUUIDList)
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
 	err = tx.Select(&lastConditions, query, args)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -506,7 +512,7 @@ func getIsuList(c echo.Context) error {
 
 			formattedCondition = &GetIsuConditionResponse{
 				JIAIsuUUID:     lastConditions[i].JIAIsuUUID,
-				IsuName:        isu.Name,
+				IsuName:        isuUUID[lastConditions[i].JIAIsuUUID].Name,
 				Timestamp:      lastConditions[i].Timestamp.Unix(),
 				IsSitting:      lastConditions[i].IsSitting,
 				Condition:      lastConditions[i].Condition,
@@ -516,10 +522,10 @@ func getIsuList(c echo.Context) error {
 		}
 
 		res := GetIsuListResponse{
-			ID:                 isu.ID,
-			JIAIsuUUID:         isu.JIAIsuUUID,
-			Name:               isu.Name,
-			Character:          isu.Character,
+			ID:                 isuUUID[lastConditions[i].JIAIsuUUID].ID,
+			JIAIsuUUID:         isuUUID[lastConditions[i].JIAIsuUUID].JIAIsuUUID,
+			Name:               isuUUID[lastConditions[i].JIAIsuUUID].Name,
+			Character:          isuUUID[lastConditions[i].JIAIsuUUID].Character,
 			LatestIsuCondition: formattedCondition}
 		responseList = append(responseList, res)
 	}
