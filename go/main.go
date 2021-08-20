@@ -479,7 +479,7 @@ func getIsuList(c echo.Context) error {
 	responseList := []GetIsuListResponse{}
 	var isuUUIDList []string
 	for i, _ := range isuList {
-		isuUUIDList := append(isuUUIDList, isuList[i].JIAIsuUUID)
+		isuUUIDList = append(isuUUIDList, isuList[i].JIAIsuUUID)
 	}
 	// N+1
 	var lastConditions []IsuCondition
