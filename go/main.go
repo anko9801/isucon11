@@ -507,7 +507,7 @@ func getIsuList(c echo.Context) error {
 
 	for i, _ := range isuList {
 		var formattedCondition *GetIsuConditionResponse
-		if foundLastCondition {
+		if _, ok := lastConditionsMap[isuList[i].JIAIsuUUID]; ok && foundLastCondition {
 			conditionLevel, err := calculateConditionLevel(lastConditionsMap[isuList[i].JIAIsuUUID].Condition)
 			if err != nil {
 				c.Logger().Error(err)
