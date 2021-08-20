@@ -486,7 +486,7 @@ func getIsuList(c echo.Context) error {
 	// N+1
 	var lastConditions []IsuCondition
 	foundLastCondition := true
-	query, args, err := sqlx.In("SELECT * FROM `isu_newest_condition` WHERE `jia_isu_uuid` = ?", isuUUIDList)
+	query, args, err := sqlx.In("SELECT * FROM `isu_newest_condition` WHERE `jia_isu_uuid` IN (?)", isuUUIDList)
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
