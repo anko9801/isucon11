@@ -482,7 +482,7 @@ func getIsuList(c echo.Context) error {
 	}
 	// N+1
 	var lastConditions []IsuCondition
-	query, args, err := sqlx.In("SELECT * FROM `isu_condition` WHERE `timestamp` IN (SELECT MAX(`timestamp`) FROM `isu_condition` GROUP BY `jia_isu_uuid`)", isuUUIDList)
+	query, args, err := sqlx.In("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` IN (?) AND `timestamp` IN (SELECT MAX(`timestamp`) FROM `isu_condition` GROUP BY `jia_isu_uuid`)", isuUUIDList)
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
