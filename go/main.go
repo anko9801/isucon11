@@ -470,6 +470,7 @@ func getIsuList(c echo.Context) error {
 	}
 
 	responseList := []GetIsuListResponse{}
+	// N+1
 	for _, isu := range isuList {
 		var lastCondition IsuCondition
 		foundLastCondition := true
@@ -785,6 +786,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 		return nil, fmt.Errorf("db error: %v", err)
 	}
 
+	// N+1
 	for rows.Next() {
 		err = rows.StructScan(&condition)
 		if err != nil {
@@ -1086,6 +1088,7 @@ func getTrend(c echo.Context) error {
 
 	res := []TrendResponse{}
 
+	// N+1 N^2
 	for _, character := range characterList {
 		isuList := []Isu{}
 		err = db.Select(&isuList,
