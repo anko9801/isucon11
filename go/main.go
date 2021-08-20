@@ -508,7 +508,7 @@ func getIsuList(c echo.Context) error {
 	for i, _ := range isuList {
 		var formattedCondition *GetIsuConditionResponse
 		if foundLastCondition {
-			conditionLevel, err := calculateConditionLevel(lastConditions[i].Condition)
+			conditionLevel, err := calculateConditionLevel(lastConditionsMap[isuList[i].JIAIsuUUID].Condition)
 			if err != nil {
 				c.Logger().Error(err)
 				return c.NoContent(http.StatusInternalServerError)
