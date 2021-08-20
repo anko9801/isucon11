@@ -1179,11 +1179,11 @@ func getTrend(c echo.Context) error {
 // ISUからのコンディションを受け取る
 
 type PostIsuConditionRequestExec struct {
-	IsSitting  bool      `json:"is_sitting"`
+	IsSitting  bool      `json:"issitting"`
 	Condition  string    `json:"condition"`
 	Message    string    `json:"message"`
 	Timestamp  time.Time `json:"timestamp"`
-	JiaIsuUuid string    `json:"jia_isu_uuid"`
+	JiaIsuUuid string    `json:"jiaisuuuid"`
 }
 
 func postIsuCondition(c echo.Context) error {
@@ -1243,8 +1243,8 @@ func postIsuCondition(c echo.Context) error {
 		/*
 			_, err = tx.Exec(
 				"INSERT INTO `isu_condition`"+
-					"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)"+
-					"	VALUES (?, ?, ?, ?, ?)",
+					"(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)"+
+					"VALUES (?, ?, ?, ?, ?)",
 				jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, cond.Message)
 			if err != nil {
 				c.Logger().Errorf("db error: %v", err)
@@ -1253,13 +1253,9 @@ func postIsuCondition(c echo.Context) error {
 		*/
 	}
 
-	_, err = tx.NamedExec("INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)", namedExecData)
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
+	_, err = tx.NamedExec("INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jiaisuuuid, :timestamp, :issitting, :condition, :message)", namedExecData)
 
-	_, err = tx.NamedExec("INSERT INTO `isu_newest_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)", namedExecData)
+	_, err = tx.NamedExec("INSERT INTO `isu_newest_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jiaisuuuid, :timestamp, :issitting, :condition, :message)", namedExecData)
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
