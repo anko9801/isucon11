@@ -477,37 +477,41 @@ func getIsuList(c echo.Context) error {
 	}
 
 	responseList := []GetIsuListResponse{}
+	var isuUUIDList []string
+	for i, _ := range isuList {
+		isuUUIDList := append(isuUUIDList, isuList[i].JIAIsuUUID)
+	}
 	// N+1
-	for _, isu := range isuList {
-		var lastCondition IsuCondition
-		foundLastCondition := true
-		err = tx.Get(&lastCondition, "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY `timestamp` DESC LIMIT 1",
-			isu.JIAIsuUUID)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				foundLastCondition = false
-			} else {
-				c.Logger().Errorf("db error: %v", err)
-				return c.NoContent(http.StatusInternalServerError)
-			}
+	var lastConditions []IsuCondition
+	foundLastCondition := true
+	query, args, err := sqlx.In("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` IN (?) ORDER BY `timestamp` DESC LIMIT 1", isuUUIDList)
+	err = tx.Select(&lastConditions, query, args)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			foundLastCondition = false
+		} else {
+			c.Logger().Errorf("db error: %v", err)
+			return c.NoContent(http.StatusInternalServerError)
 		}
+	}
 
+	for i, _ := range lastConditions {
 		var formattedCondition *GetIsuConditionResponse
 		if foundLastCondition {
-			conditionLevel, err := calculateConditionLevel(lastCondition.Condition)
+			conditionLevel, err := calculateConditionLevel(lastConditions[i].Condition)
 			if err != nil {
 				c.Logger().Error(err)
 				return c.NoContent(http.StatusInternalServerError)
 			}
 
 			formattedCondition = &GetIsuConditionResponse{
-				JIAIsuUUID:     lastCondition.JIAIsuUUID,
+				JIAIsuUUID:     lastConditions[i].JIAIsuUUID,
 				IsuName:        isu.Name,
-				Timestamp:      lastCondition.Timestamp.Unix(),
-				IsSitting:      lastCondition.IsSitting,
-				Condition:      lastCondition.Condition,
+				Timestamp:      lastConditions[i].Timestamp.Unix(),
+				IsSitting:      lastConditions[i].IsSitting,
+				Condition:      lastConditions[i].Condition,
 				ConditionLevel: conditionLevel,
-				Message:        lastCondition.Message,
+				Message:        lastConditions[i].Message,
 			}
 		}
 
