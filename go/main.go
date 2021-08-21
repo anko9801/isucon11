@@ -307,17 +307,30 @@ func getUserIDFromSession(c echo.Context) (string, int, error) {
 
 	jiaUserID := _jiaUserID.(string)
 
-	var ID int
-	err = db.Get(&ID,
-		"SELECT ID FROM `isu` WHERE `jia_user_id` = ? LIMIT 1",
-		jiaUserID,
-	)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", http.StatusUnauthorized, fmt.Errorf("not found: user")
-		}
+	/*
+		var ID int
+		err = db.Get(&ID,
+			"SELECT ID FROM `isu` WHERE `jia_user_id` = ? LIMIT 1",
+			jiaUserID,
+		)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return "", http.StatusUnauthorized, fmt.Errorf("not found: user")
+			}
 
+			return "", http.StatusInternalServerError, fmt.Errorf("db error: %v", err)
+		}
+	*/
+	var count int
+
+	err = db.Get(&count, "SELECT COUNT(*) FROM `user` WHERE `jia_user_id` = ?",
+		jiaUserID)
+	if err != nil {
 		return "", http.StatusInternalServerError, fmt.Errorf("db error: %v", err)
+	}
+
+	if count == 0 {
+		return "", http.StatusUnauthorized, fmt.Errorf("not found: user")
 	}
 
 	return jiaUserID, 0, nil
