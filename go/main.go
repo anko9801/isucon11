@@ -275,6 +275,7 @@ func main() {
 	db3.SetMaxOpenConns(1024)
 	db3.SetMaxIdleConns(1024)
 	defer db3.Close()
+	fmt.Println(mySQLConnectionData, mySQLIsuconditionConnectionData, db, db3)
 
 	postIsuConditionTargetBaseURL = os.Getenv("POST_ISUCONDITION_TARGET_BASE_URL")
 	if postIsuConditionTargetBaseURL == "" {
