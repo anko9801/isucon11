@@ -23,7 +23,7 @@ LOGS_DIR=/etc/logs
 DISCORD_WEBHOOK_URL=https://discordapp.com/api/webhooks/867508473755729960/vx_KpRImt_AzO_Zp8YQwB2zjqmIhebRFdOrUM4JIdK42MJH11PUfu6xFzo7XoB_aUn_a
 
 NGINX_CONFIG=/etc/nginx/nginx.conf
-MYSQLD_CONFIG=/etc/mysql/conf.d/mysqld.cnf
+MYSQLD_CONFIG=/etc/mysql/mariadb.conf.d/50-server.cnf
 #################################################################################
 PPROF=go tool pprof
 KATARIBE=kataribe -f $(KATARIBE_CFG)
@@ -81,7 +81,7 @@ copy-config-nginx:
 
 .PHONY: copy-config-mysqld
 copy-config-mysqld:
-	sudo cp mysqld.cnf $(MYSQLD_CONFIG)
+	sudo cp 50-server.cnf $(MYSQLD_CONFIG)
 
 ##########################################################################################
 
