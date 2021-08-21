@@ -782,15 +782,18 @@ func getIsuGraph(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	var count int
-	err = tx.Get(&count, "SELECT COUNT(*) FROM `isu` WHERE `jia_user_id` = ? AND `jia_isu_uuid` = ?",
-		jiaUserID, jiaIsuUUID)
+	var ID int
+	err = tx.Get(&ID,
+		"SELECT ID FROM `isu` WHERE `jia_isu_uuid` = ? AND `jia_user_id` = ? LIMIT 1",
+		jiaIsuUUID, jiaUserID,
+	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.String(http.StatusNotFound, "not found: isu")
+		}
+
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
-	}
-	if count == 0 {
-		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
 	res, err := generateIsuGraphResponse(tx, jiaIsuUUID, date)
