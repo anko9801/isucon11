@@ -194,7 +194,7 @@ func NewMySQLConnectionEnv() *MySQLConnectionEnv {
 }
 func NewIsuconditionMySQLConnectionEnv() *MySQLConnectionEnv {
 	return &MySQLConnectionEnv{
-		Host:     getEnv("MYSQL_HOST", "35.74.88.169"),
+		Host:     "192.168.0.12",
 		Port:     getEnv("MYSQL_PORT", "3306"),
 		User:     getEnv("MYSQL_USER", "isucon"),
 		DBName:   getEnv("MYSQL_DBNAME", "isucondition"),
@@ -328,6 +328,8 @@ func getUserIDFromSession(c echo.Context) (string, int, error) {
 	if err != nil {
 		return "", http.StatusInternalServerError, fmt.Errorf("db error: %v", err)
 	}
+
+	pprofLog.Println(count)
 
 	if count == 0 {
 		return "", http.StatusUnauthorized, fmt.Errorf("not found: user")
