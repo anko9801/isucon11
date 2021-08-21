@@ -220,6 +220,30 @@ func init() {
 	}
 }
 
+func waitDB(db *sqlx.DB) {
+	for {
+		err := db.Ping()
+		if err == nil {
+			return
+		}
+
+		fmt.Printf("Failed to ping DB: %s", err)
+		fmt.Println("Retrying...")
+		time.Sleep(time.Second)
+	}
+}
+
+func pollDB(db *sqlx.DB) {
+	for {
+		err := db.Ping()
+		if err != nil {
+			fmt.Printf("Failed to ping DB: %s", err)
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+
 func main() {
 	go func() {
 		pprofLog.Println(http.ListenAndServe("localhost:6060", nil))
@@ -266,6 +290,9 @@ func main() {
 	db.SetMaxOpenConns(1024)
 	db.SetMaxIdleConns(1024)
 	defer db.Close()
+	// main関数内に置く
+	waitDB(db)
+	go pollDB(db)
 
 	db3, err = mySQLIsuconditionConnectionData.ConnectDB()
 	if err != nil {
@@ -275,6 +302,8 @@ func main() {
 	db3.SetMaxOpenConns(1024)
 	db3.SetMaxIdleConns(1024)
 	defer db3.Close()
+	waitDB(db3)
+	go pollDB(db3)
 
 	postIsuConditionTargetBaseURL = os.Getenv("POST_ISUCONDITION_TARGET_BASE_URL")
 	if postIsuConditionTargetBaseURL == "" {
