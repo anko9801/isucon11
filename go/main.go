@@ -24,7 +24,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 
-	pprofLog "log"
 	_ "net/http/pprof"
 )
 
@@ -245,15 +244,11 @@ func pollDB(db *sqlx.DB) {
 }
 
 func main() {
-	go func() {
-		pprofLog.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
-
 	e := echo.New()
 	e.Debug = true
-	e.Logger.SetLevel(log.DEBUG)
+	e.Logger.SetLevel(log.OFF)
 
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	e.POST("/initialize", postInitialize)
@@ -356,8 +351,6 @@ func getUserIDFromSession(c echo.Context) (string, int, error) {
 	if err != nil {
 		return "", http.StatusInternalServerError, fmt.Errorf("db error: %v", err)
 	}
-
-	pprofLog.Println(count)
 
 	if count == 0 {
 		return "", http.StatusUnauthorized, fmt.Errorf("not found: user")
