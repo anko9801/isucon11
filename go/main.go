@@ -19,7 +19,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
@@ -65,6 +64,7 @@ type Isu struct {
 	ID         int       `db:"id" json:"id"`
 	JIAIsuUUID string    `db:"jia_isu_uuid" json:"jia_isu_uuid"`
 	Name       string    `db:"name" json:"name"`
+	Image      []byte    `db:"image" json:"-"`
 	Character  string    `db:"character" json:"character"`
 	JIAUserID  string    `db:"jia_user_id" json:"-"`
 	CreatedAt  time.Time `db:"created_at" json:"-"`
@@ -338,6 +338,20 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	var isus []Isu
+	err = db.Select(&isus, "SELECT * FROM `isu`")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	for _, isu := range isus {
+		err = ioutil.WriteFile("../image/"+isu.JIAUserID+"_"+isu.JIAIsuUUID+".jpg", isu.Image, 0755)
+		if err != nil {
+			c.Logger().Error(err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	}
+
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
 	})
@@ -587,7 +601,7 @@ func postIsu(c echo.Context) error {
 		}
 	}
 
-	err = ioutil.WriteFile(jiaIsuUUID, image, 0755)
+	err = ioutil.WriteFile("../image/"+jiaUserID+"_"+jiaIsuUUID+".jpg", image, 0755)
 	if err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -712,7 +726,7 @@ func getIsuID(c echo.Context) error {
 // GET /api/isu/:jia_isu_uuid/icon
 // ISUのアイコンを取得
 func getIsuIcon(c echo.Context) error {
-	_, errStatusCode, err := getUserIDFromSession(c)
+	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
 			return c.String(http.StatusUnauthorized, "you are not signed in")
@@ -723,26 +737,28 @@ func getIsuIcon(c echo.Context) error {
 	}
 
 	jiaIsuUUID := c.Param("jia_isu_uuid")
-	if IsValidUUID(jiaIsuUUID) == false {
-		return c.String(http.StatusNotFound, "not found: isu")
-	}
 
-	image, err := ioutil.ReadFile(jiaIsuUUID)
+	var ID int
+	err = db.Get(&ID,
+		"SELECT ID FROM `isu` WHERE `jia_isu_uuid` = ? AND `jia_user_id` = ? LIMIT 1",
+		jiaIsuUUID, jiaUserID,
+	)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.String(http.StatusNotFound, "not found: isu")
 		}
 
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	image, err := ioutil.ReadFile("../image/" + jiaUserID + "_" + jiaIsuUUID + ".jpg")
+	if err != nil {
 		c.Logger().Errorf("file access error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	return c.Blob(http.StatusOK, "", image)
-}
-
-func IsValidUUID(u string) bool {
-	_, err := uuid.Parse(u)
-	return err == nil
 }
 
 // GET /api/isu/:jia_isu_uuid/graph
