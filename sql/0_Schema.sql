@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS `isu_association_config`;
 DROP TABLE IF EXISTS `isu_condition`;
+DROP TABLE IF EXISTS `isu_newest_condition`;
 DROP TABLE IF EXISTS `isu`;
 DROP TABLE IF EXISTS `user`;
 
@@ -24,6 +25,16 @@ CREATE TABLE `isu_condition` (
   `message` VARCHAR(255) NOT NULL,
   `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY(`id`)
+) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
+
+CREATE TABLE `isu_newest_condition` (
+  `jia_isu_uuid` CHAR(36) NOT NULL,
+  `timestamp` DATETIME NOT NULL,
+  `is_sitting` TINYINT(1) NOT NULL,
+  `condition` VARCHAR(255) NOT NULL,
+  `message` VARCHAR(255) NOT NULL,
+  `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY(`jia_isu_uuid`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
 CREATE TABLE `user` (
