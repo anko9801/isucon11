@@ -346,7 +346,7 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	for _, isu := range isus {
-		err = ioutil.WriteFile("../"+isu.JIAIsuUUID+".jpg", isu.Image, 0755)
+		err = ioutil.WriteFile("../image"+isu.JIAIsuUUID+".jpg", isu.Image, 0755)
 		if err != nil {
 			c.Logger().Error(err)
 			return c.NoContent(http.StatusInternalServerError)
@@ -592,7 +592,7 @@ func postIsu(c echo.Context) error {
 		}
 	}
 
-	err = ioutil.WriteFile("../"+jiaIsuUUID+".jpg", image, 0755)
+	err = ioutil.WriteFile("../image"+jiaIsuUUID+".jpg", image, 0755)
 	if err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -732,7 +732,7 @@ func getIsuIcon(c echo.Context) error {
 		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
-	image, err := ioutil.ReadFile("../" + jiaIsuUUID + ".jpg")
+	image, err := ioutil.ReadFile("../image" + jiaIsuUUID + ".jpg")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return c.String(http.StatusNotFound, "not found: isu")
