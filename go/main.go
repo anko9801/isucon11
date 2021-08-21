@@ -267,7 +267,7 @@ func main() {
 	db.SetMaxIdleConns(1024)
 	defer db.Close()
 
-	db3, err := mySQLIsuconditionConnectionData.ConnectDB()
+	db3, err = mySQLIsuconditionConnectionData.ConnectDB()
 	if err != nil {
 		e.Logger.Fatalf("failed to connect db: %v", err)
 		return
