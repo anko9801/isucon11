@@ -46,9 +46,11 @@ const (
 )
 
 var (
-	db                  *sqlx.DB
+	db *sqlx.DB
+	//dbIsucondition                  *sqlx.DB
 	sessionStore        sessions.Store
 	mySQLConnectionData *MySQLConnectionEnv
+	//mySQLIsuconditionConnectionData *MySQLConnectionEnv
 
 	jiaJWTSigningKey *ecdsa.PublicKey
 
@@ -183,7 +185,17 @@ func getEnv(key string, defaultValue string) string {
 
 func NewMySQLConnectionEnv() *MySQLConnectionEnv {
 	return &MySQLConnectionEnv{
-		Host:     getEnv("MYSQL_HOST", "127.0.0.1"),
+		//Host:     getEnv("MYSQL_HOST", "127.0.0.1"),
+		Host:     getEnv("MYSQL_HOST", "35.74.88.169"),
+		Port:     getEnv("MYSQL_PORT", "3306"),
+		User:     getEnv("MYSQL_USER", "isucon"),
+		DBName:   getEnv("MYSQL_DBNAME", "isucondition"),
+		Password: getEnv("MYSQL_PASS", "isucon"),
+	}
+}
+func NewIsuconditionMySQLConnectionEnv() *MySQLConnectionEnv {
+	return &MySQLConnectionEnv{
+		Host:     getEnv("MYSQL_HOST", "35.74.88.169"),
 		Port:     getEnv("MYSQL_PORT", "3306"),
 		User:     getEnv("MYSQL_USER", "isucon"),
 		DBName:   getEnv("MYSQL_DBNAME", "isucondition"),
@@ -244,6 +256,7 @@ func main() {
 	e.Static("/assets", frontendContentsPath+"/assets")
 
 	mySQLConnectionData = NewMySQLConnectionEnv()
+	//mySQLIsuconditionConnectionData = NewIsuconditionMySQLConnectionEnv()
 
 	var err error
 	db, err = mySQLConnectionData.ConnectDB()
@@ -253,6 +266,16 @@ func main() {
 	}
 	db.SetMaxOpenConns(10)
 	defer db.Close()
+
+	/*
+		dbIsucondition, err = mySQLIsuconditionConnectionData.ConnectDB()
+		if err != nil {
+			e.Logger.Fatalf("failed to connect db: %v", err)
+			return
+		}
+		dbIsucondition.SetMaxOpenConns(10)
+		defer dbIsucondition.Close()
+	*/
 
 	postIsuConditionTargetBaseURL = os.Getenv("POST_ISUCONDITION_TARGET_BASE_URL")
 	if postIsuConditionTargetBaseURL == "" {
@@ -489,6 +512,19 @@ func getIsuList(c echo.Context) error {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	err = tx.Commit()
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	tx, err = db.Beginx()
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
 
 	responseList := []GetIsuListResponse{}
 	// N+1
