@@ -45,11 +45,11 @@ const (
 )
 
 var (
-	db *sqlx.DB
-	//dbIsucondition                  *sqlx.DB
-	sessionStore        sessions.Store
-	mySQLConnectionData *MySQLConnectionEnv
-	//mySQLIsuconditionConnectionData *MySQLConnectionEnv
+	db                              *sqlx.DB
+	db3                             *sqlx.DB
+	sessionStore                    sessions.Store
+	mySQLConnectionData             *MySQLConnectionEnv
+	mySQLIsuconditionConnectionData *MySQLConnectionEnv
 
 	jiaJWTSigningKey *ecdsa.PublicKey
 
@@ -194,7 +194,7 @@ func NewMySQLConnectionEnv() *MySQLConnectionEnv {
 }
 func NewIsuconditionMySQLConnectionEnv() *MySQLConnectionEnv {
 	return &MySQLConnectionEnv{
-		Host:     "192.168.0.12",
+		Host:     "192.168.0.13",
 		Port:     getEnv("MYSQL_PORT", "3306"),
 		User:     getEnv("MYSQL_USER", "isucon"),
 		DBName:   getEnv("MYSQL_DBNAME", "isucondition"),
@@ -255,7 +255,7 @@ func main() {
 	e.Static("/assets", frontendContentsPath+"/assets")
 
 	mySQLConnectionData = NewMySQLConnectionEnv()
-	//mySQLIsuconditionConnectionData = NewIsuconditionMySQLConnectionEnv()
+	mySQLIsuconditionConnectionData = NewIsuconditionMySQLConnectionEnv()
 
 	var err error
 	db, err = mySQLConnectionData.ConnectDB()
@@ -267,15 +267,14 @@ func main() {
 	db.SetMaxIdleConns(1024)
 	defer db.Close()
 
-	/*
-		dbIsucondition, err = mySQLIsuconditionConnectionData.ConnectDB()
-		if err != nil {
-			e.Logger.Fatalf("failed to connect db: %v", err)
-			return
-		}
-		dbIsucondition.SetMaxOpenConns(10)
-		defer dbIsucondition.Close()
-	*/
+	db3, err := mySQLIsuconditionConnectionData.ConnectDB()
+	if err != nil {
+		e.Logger.Fatalf("failed to connect db: %v", err)
+		return
+	}
+	db3.SetMaxOpenConns(1024)
+	db3.SetMaxIdleConns(1024)
+	defer db3.Close()
 
 	postIsuConditionTargetBaseURL = os.Getenv("POST_ISUCONDITION_TARGET_BASE_URL")
 	if postIsuConditionTargetBaseURL == "" {
@@ -536,7 +535,7 @@ func getIsuList(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	tx, err = db.Beginx()
+	tx, err = db3.Beginx()
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -849,12 +848,23 @@ func getIsuGraph(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	tx, err = db3.Beginx()
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
 	res, err := generateIsuGraphResponse(tx, jiaIsuUUID, date)
 	if err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-
 	err = tx.Commit()
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
@@ -1101,14 +1111,14 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 	var err error
 
 	if startTime.IsZero() {
-		err = db.Select(&conditions,
+		err = db3.Select(&conditions,
 			"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?"+
 				"	AND `timestamp` < ?"+
 				"	ORDER BY `timestamp` DESC",
 			jiaIsuUUID, endTime,
 		)
 	} else {
-		err = db.Select(&conditions,
+		err = db3.Select(&conditions,
 			"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ?"+
 				"	AND `timestamp` < ?"+
 				"	AND ? <= `timestamp`"+
@@ -1196,7 +1206,7 @@ func getTrend(c echo.Context) error {
 		characterCriticalIsuConditions := []*TrendCondition{}
 		for _, isu := range isuList {
 			conditions := []IsuCondition{}
-			err = db.Select(&conditions,
+			err = db3.Select(&conditions,
 				"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` IN(?) ORDER BY timestamp DESC LIMIT 1",
 				isu.JIAIsuUUID,
 			)
@@ -1281,7 +1291,7 @@ func postIsuCondition(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "bad request body")
 	}
 
-	tx, err := db.Beginx()
+	tx, err := db3.Beginx()
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
