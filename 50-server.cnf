@@ -27,7 +27,7 @@ lc-messages-dir         = /usr/share/mysql
 # localhost which is more compatible and is not less secure.
 bind-address            = 0.0.0.0
 
-slow_query_log=1
+slow_query_log=0
 slow_query_log_file=/var/log/mysql/mysql-slow.log
 long_query_time=0 # 全てのクエリを書き込んで解析ツールに渡す
 log_queries_not_using_indexes=1 # インデックスを使っていないクエリも出力する
