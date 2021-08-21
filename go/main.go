@@ -25,6 +25,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 
+	pprofLog "log"
 	_ "net/http/pprof"
 )
 
@@ -210,7 +211,7 @@ func init() {
 
 func main() {
 	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
+		pprofLog.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 
 	e := echo.New()
