@@ -477,6 +477,7 @@ func getIsuList(c echo.Context) error {
 	}
 
 	responseList := []GetIsuListResponse{}
+	// N+1
 	for _, isu := range isuList {
 		var lastCondition IsuCondition
 		foundLastCondition := true
@@ -792,6 +793,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 		return nil, fmt.Errorf("db error: %v", err)
 	}
 
+	// N+1
 	for rows.Next() {
 		err = rows.StructScan(&condition)
 		if err != nil {
@@ -1093,6 +1095,7 @@ func getTrend(c echo.Context) error {
 
 	res := []TrendResponse{}
 
+	// N+1 N^2
 	for _, character := range characterList {
 		isuList := []Isu{}
 		err = db.Select(&isuList,
@@ -1164,6 +1167,15 @@ func getTrend(c echo.Context) error {
 
 // POST /api/condition/:jia_isu_uuid
 // ISUからのコンディションを受け取る
+
+type PostIsuConditionRequestExec {
+	IsSitting bool   `json:"is_sitting"`
+	Condition string `json:"condition"`
+	Message   string `json:"message"`
+	Timestamp int64  `json:"timestamp"`
+	JiaIsuUuid string `json:"jia_isu_uuid"`
+}
+
 func postIsuCondition(c echo.Context) error {
 	// TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
 	dropProbability := 0.9
@@ -1202,6 +1214,8 @@ func postIsuCondition(c echo.Context) error {
 		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
+	var execData []PostIsuConditionRequestExec{}
+
 	for _, cond := range req {
 		timestamp := time.Unix(cond.Timestamp, 0)
 
@@ -1209,6 +1223,14 @@ func postIsuCondition(c echo.Context) error {
 			return c.String(http.StatusBadRequest, "bad request body")
 		}
 
+		namedExecData = append(execData, PostIsuConditionRequestExec{
+			IsSitting: cond.IsSitting,
+			Condition: cond.Condition,
+			Message: cond.Message,
+			Timestamp: int64(timestamp),
+			JiaIsuUuid: jiaIsuUUID
+		})
+		/*
 		_, err = tx.Exec(
 			"INSERT INTO `isu_condition`"+
 				"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)"+
@@ -1218,7 +1240,14 @@ func postIsuCondition(c echo.Context) error {
 			c.Logger().Errorf("db error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
+		*/
+	}
 
+	_, err = tx.NamedExec("INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)")
+
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	err = tx.Commit()
