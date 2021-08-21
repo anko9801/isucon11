@@ -1272,14 +1272,18 @@ func postIsuCondition(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	var count int
-	err = tx.Get(&count, "SELECT COUNT(*) FROM `isu` WHERE `jia_isu_uuid` = ?", jiaIsuUUID)
+	var ID int
+	err = db.Get(&ID,
+		"SELECT ID FROM `isu` WHERE `jia_isu_uuid` = ? LIMIT 1",
+		jiaIsuUUID,
+	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.String(http.StatusNotFound, "not found: isu")
+		}
+
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
-	}
-	if count == 0 {
-		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
 	var namedExecData []PostIsuConditionRequestExec
