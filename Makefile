@@ -104,7 +104,7 @@ pprof:
 
 .PHONY: slow
 slow:
-	sudo cat $(SLOW_LOG) | mysqldumpslow -s t -t 10 | curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"$(cat)\"}" $(DISCORD_WEBHOOK_URL)
+	sudo cat $(SLOW_LOG) | sudo mysqldumpslow -s t -t 10
 
 .PHONY: alp
 alp:
