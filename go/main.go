@@ -1221,7 +1221,7 @@ func getTrend(c echo.Context) error {
 		characterCriticalIsuConditions := []*TrendCondition{}
 		for _, isu := range isuList {
 			isuLastCondition := IsuCondition{}
-			err = db3.Select(&isuLastCondition,
+			err = db3.Get(&isuLastCondition,
 				"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY timestamp DESC LIMIT 1",
 				isu.JIAIsuUUID,
 			)
