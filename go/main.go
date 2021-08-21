@@ -339,6 +339,20 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	var isus []Isu
+	err = db.Get(&isus, "SELECT * FROM `isu`")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	for _, isu := range isus {
+		err = ioutil.WriteFile("../"+isu.JIAIsuUUID+".jpg", isu.Image, 0755)
+		if err != nil {
+			c.Logger().Error(err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	}
+
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
 	})
