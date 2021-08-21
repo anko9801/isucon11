@@ -361,7 +361,7 @@ func getUserIDFromSession(c echo.Context) (string, int, error) {
 
 func getJIAServiceURL(tx *sqlx.Tx) string {
 	var URL string
-	err := tx.Get(&URL, "SELECT * FROM `isu_association_config` WHERE `name` = ?", "jia_service_url")
+	err := tx.Get(&URL, "SELECT `url` FROM `isu_association_config` WHERE `name` = ?", "jia_service_url")
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			log.Print(err)
