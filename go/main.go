@@ -19,7 +19,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
@@ -728,26 +727,28 @@ func getIsuIcon(c echo.Context) error {
 	}
 
 	jiaIsuUUID := c.Param("jia_isu_uuid")
-	if !IsValidUUID(jiaIsuUUID) {
-		return c.String(http.StatusNotFound, "not found: isu")
+
+	var ID int
+	err = db.Get(&ID,
+		"SELECT ID FROM `isu` WHERE `jia_isu_uuid` = ? AND `jia_user_id` = ? LIMIT 1",
+		jiaIsuUUID, jiaUserID,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.String(http.StatusNotFound, "not found: isu")
+		}
+
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	image, err := ioutil.ReadFile("../image/" + jiaUserID + "_" + jiaIsuUUID + ".jpg")
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return c.String(http.StatusNotFound, "not found: isu")
-		}
-
 		c.Logger().Errorf("file access error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	return c.Blob(http.StatusOK, "", image)
-}
-
-func IsValidUUID(u string) bool {
-	_, err := uuid.Parse(u)
-	return err == nil
 }
 
 // GET /api/isu/:jia_isu_uuid/graph
