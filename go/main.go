@@ -590,7 +590,7 @@ func postIsu(c echo.Context) error {
 		}
 	}
 
-	err = ioutil.WriteFile(jiaIsuUUID, image, 0755)
+	err = ioutil.WriteFile("../"+jiaIsuUUID+".jpg", image, 0755)
 	if err != nil {
 		c.Logger().Error(err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -726,11 +726,11 @@ func getIsuIcon(c echo.Context) error {
 	}
 
 	jiaIsuUUID := c.Param("jia_isu_uuid")
-	if IsValidUUID(jiaIsuUUID) == false {
+	if !IsValidUUID(jiaIsuUUID) {
 		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
-	image, err := ioutil.ReadFile(jiaIsuUUID)
+	image, err := ioutil.ReadFile("../" + jiaIsuUUID + ".jpg")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return c.String(http.StatusNotFound, "not found: isu")
